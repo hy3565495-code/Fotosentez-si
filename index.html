@@ -1,0 +1,361 @@
+```html
+<!DOCTYPE html>
+<html lang="tr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fotosentez Simülasyonu - Akıllı Tahta Modu</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Akıllı tahta için koyu ve göz yormayan arka plan */
+            user-select: none; /* Dokunmatik kullanımda metin seçimini engeller */
+        }
+
+        .bubble {
+            animation: float-up 2.5s infinite linear;
+        }
+
+        @keyframes float-up {
+            0% { transform: translateY(0px) scale(0.8); opacity: 0; }
+            50% { opacity: 0.9; }
+            100% { transform: translateY(-90px) scale(1.3); opacity: 0; }
+        }
+
+        .plant-part {
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: bottom center;
+        }
+
+        /* Dokunmatik Buton Efektleri */
+        .touch-card {
+            transition: transform 0.15s ease, border-color 0.2s ease, background-color 0.2s ease;
+        }
+        .touch-card:active {
+            transform: scale(0.97);
+        }
+
+        /* Akıllı Tahta Slider Stili */
+        input[type=range]::-webkit-slider-thumb {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #f97316;
+            cursor: pointer;
+            border: 3px solid #ffffff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #10b981;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-100 flex flex-col justify-between overflow-hidden p-3 gap-3">
+
+    <!-- Üst Başlık ve Akıllı Tahta Kontrolleri -->
+    <header class="bg-slate-800/90 border border-slate-700 rounded-2xl px-6 py-2.5 flex justify-between items-center shadow-lg backdrop-blur-md">
+        <div class="flex items-center gap-4">
+            <div class="bg-emerald-500 text-slate-950 p-2.5 rounded-xl shadow-md">
+                <i class="fa-solid fa-leaf text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-extrabold tracking-wide text-white">FOTOSENTEZ SİMÜLATÖRÜ</h1>
+                <p class="text-xs text-emerald-400 font-semibold">Akıllı Tahta İnteraktif Biyoloji Deneyi</p>
+            </div>
+        </div>
+
+        <!-- Durum Özeti -->
+        <div id="topStatusBox" class="flex items-center gap-3 px-5 py-2 rounded-xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-300">
+            <i id="topStatusIcon" class="fa-solid fa-circle-check text-xl text-emerald-400"></i>
+            <span id="topStatusText" class="font-bold text-sm">Fotosentez Aktif (Glikoz & O₂ Üretiliyor)</span>
+        </div>
+
+        <div class="flex gap-2">
+            <button id="resetBtn" class="bg-slate-700 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl border border-slate-600 transition flex items-center gap-2 active:scale-95 text-sm">
+                <i class="fa-solid fa-rotate-left text-emerald-400"></i> Deneyi Sıfırla
+            </button>
+        </div>
+    </header>
+
+    <!-- Ana Ekran Yatay Düzen (3 Sütun) -->
+    <main class="grid grid-cols-12 gap-3 flex-grow h-[calc(100vh-105px)]">
+
+        <!-- SOL SÜTUN: Büyük Dokunmatik Kontroller (4 Kolon) -->
+        <section class="col-span-4 bg-slate-800/80 border border-slate-700 rounded-2xl p-4 flex flex-col justify-between space-y-3">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2 border-b border-slate-700 pb-2">
+                <i class="fa-solid fa-sliders text-emerald-400 text-base"></i> Gerekli Faktörler
+            </h2>
+
+            <div class="grid grid-cols-2 gap-2.5 flex-grow">
+                <!-- Işık -->
+                <button id="btnLight" onclick="toggleFactor('Light')" class="touch-card border-2 bg-slate-900 border-amber-500 rounded-2xl p-3 flex flex-col justify-between items-start text-left relative overflow-hidden group">
+                    <div class="flex justify-between w-full items-center">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-sun"></i>
+                        </div>
+                        <span id="stateLight" class="text-xs font-black px-2 py-1 rounded-md bg-amber-500 text-slate-950">AÇIK</span>
+                    </div>
+                    <div>
+                        <span class="block text-sm font-bold text-white">Güneş Işığı</span>
+                        <span class="text-[11px] text-slate-400">Foton / Enerji</span>
+                    </div>
+                </button>
+
+                <!-- Su -->
+                <button id="btnWater" onclick="toggleFactor('Water')" class="touch-card border-2 bg-slate-900 border-blue-500 rounded-2xl p-3 flex flex-col justify-between items-start text-left relative overflow-hidden">
+                    <div class="flex justify-between w-full items-center">
+                        <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-droplet"></i>
+                        </div>
+                        <span id="stateWater" class="text-xs font-black px-2 py-1 rounded-md bg-blue-500 text-slate-950">AÇIK</span>
+                    </div>
+                    <div>
+                        <span class="block text-sm font-bold text-white">Su (H₂O)</span>
+                        <span class="text-[11px] text-slate-400">Elektron Kaynağı</span>
+                    </div>
+                </button>
+
+                <!-- Karbondioksit -->
+                <button id="btnCO2" onclick="toggleFactor('CO2')" class="touch-card border-2 bg-slate-900 border-slate-500 rounded-2xl p-3 flex flex-col justify-between items-start text-left relative overflow-hidden">
+                    <div class="flex justify-between w-full items-center">
+                        <div class="w-10 h-10 rounded-xl bg-slate-700 text-slate-200 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-wind"></i>
+                        </div>
+                        <span id="stateCO2" class="text-xs font-black px-2 py-1 rounded-md bg-slate-400 text-slate-950">AÇIK</span>
+                    </div>
+                    <div>
+                        <span class="block text-sm font-bold text-white">Karbondioksit</span>
+                        <span class="text-[11px] text-slate-400">CO₂ / Karbon Kaynağı</span>
+                    </div>
+                </button>
+
+                <!-- Klorofil -->
+                <button id="btnChlorophyll" onclick="toggleFactor('Chlorophyll')" class="touch-card border-2 bg-slate-900 border-emerald-500 rounded-2xl p-3 flex flex-col justify-between items-start text-left relative overflow-hidden">
+                    <div class="flex justify-between w-full items-center">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-seedling"></i>
+                        </div>
+                        <span id="stateChlorophyll" class="text-xs font-black px-2 py-1 rounded-md bg-emerald-500 text-slate-950">AÇIK</span>
+                    </div>
+                    <div>
+                        <span class="block text-sm font-bold text-white">Klorofil Organeli</span>
+                        <span class="text-[11px] text-slate-400">Yeşil Pigment</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Sıcaklık Sürgüsü -->
+            <div class="bg-slate-900/90 border border-slate-700 p-3.5 rounded-2xl space-y-2">
+                <div class="flex justify-between items-center">
+                    <label for="tempSlider" class="font-bold text-xs text-slate-300 flex items-center gap-2">
+                        <i class="fa-solid fa-temperature-half text-orange-400 text-base"></i> Sıcaklık Derecesi
+                    </label>
+                    <span id="tempValue" class="text-sm font-black text-orange-400 bg-orange-950/80 border border-orange-500/40 px-3 py-0.5 rounded-lg">25 °C</span>
+                </div>
+                <input type="range" id="tempSlider" min="0" max="50" value="25" class="w-full h-3 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                <div class="flex justify-between text-[10px] text-slate-400 font-bold">
+                    <span>0°C (Buz)</span>
+                    <span class="text-emerald-400">25°C (İdeal)</span>
+                    <span>50°C (Bozunma)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ORTA SÜTUN: Geniş Canlı Simülasyon Sahnesi (5 Kolon) -->
+        <section class="col-span-5 bg-gradient-to-b from-sky-900 via-slate-900 to-slate-950 border border-slate-700 rounded-2xl relative overflow-hidden flex flex-col justify-between p-4 shadow-inner">
+            
+            <!-- Güneş Görseli -->
+            <div id="sunContainer" class="absolute top-4 left-4 flex items-center gap-3 transition-all duration-500">
+                <div class="relative flex items-center justify-center">
+                    <div class="w-20 h-20 bg-amber-400 rounded-full shadow-[0_0_40px_rgba(251,191,36,0.6)] flex items-center justify-center text-amber-950 text-3xl font-bold animate-pulse">
+                        <i class="fa-solid fa-sun text-amber-600"></i>
+                    </div>
+                </div>
+                <div class="text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-full backdrop-blur-md">
+                    Güneş Işığı Aktif
+                </div>
+            </div>
+
+            <!-- CO2 Bulutu -->
+            <div id="co2Visual" class="absolute top-6 right-6 flex flex-col items-end gap-1 transition-opacity duration-500">
+                <span class="text-xs font-bold text-slate-300 bg-slate-800/80 px-3 py-1 rounded-full border border-slate-600">Atmosferik CO₂</span>
+                <div class="flex gap-3 text-slate-400 text-sm mt-1">
+                    <i class="fa-solid fa-cloud bubble" style="animation-delay: 0s;"></i>
+                    <i class="fa-solid fa-cloud bubble" style="animation-delay: 0.8s;"></i>
+                    <i class="fa-solid fa-cloud bubble" style="animation-delay: 1.6s;"></i>
+                </div>
+            </div>
+
+            <!-- OKSİJEN Baloncukları -->
+            <div id="o2Visual" class="absolute top-1/3 right-10 flex flex-col items-center transition-opacity duration-500">
+                <span class="text-xs font-black text-emerald-300 bg-emerald-950/90 border border-emerald-400 px-3 py-1 rounded-full shadow-lg animate-bounce">
+                    O₂ Üretimi Salınıyor ↑
+                </span>
+            </div>
+
+            <!-- Bitki SVG Görseli -->
+            <div class="relative z-10 mx-auto mt-auto mb-2 w-full flex justify-center items-end">
+                <svg id="plantSvg" viewBox="0 0 200 240" class="w-72 h-80 overflow-visible">
+                    <!-- Saksı -->
+                    <path d="M 50 180 L 150 180 L 138 235 L 62 235 Z" fill="#9a3412" stroke="#7c2d12" stroke-width="2"/>
+                    <rect x="44" y="168" width="112" height="14" rx="4" fill="#c2410c" stroke="#7c2d12" stroke-width="2"/>
+                    <!-- Toprak -->
+                    <ellipse cx="100" cy="170" rx="48" ry="7" fill="#292524"/>
+
+                    <!-- Su Görselleştirmesi -->
+                    <g id="waterVisual" class="transition-opacity duration-500 opacity-100">
+                        <circle cx="75" cy="170" r="3" fill="#38bdf8"/>
+                        <circle cx="100" cy="172" r="3.5" fill="#38bdf8"/>
+                        <circle cx="125" cy="169" r="3" fill="#38bdf8"/>
+                    </g>
+
+                    <!-- Ana Gövde -->
+                    <path id="plantStem" class="plant-part" d="M 100 168 Q 100 110 100 65" fill="none" stroke="#22c55e" stroke-width="8" stroke-linecap="round"/>
+
+                    <!-- Yapraklar -->
+                    <path id="leaf1" class="plant-part" d="M 100 135 C 50 125 30 90 50 80 C 70 80 95 115 100 135 Z" fill="#16a34a" stroke="#15803d" stroke-width="2"/>
+                    <path id="leaf2" class="plant-part" d="M 100 115 C 150 105 170 70 150 60 C 130 60 105 95 100 115 Z" fill="#16a34a" stroke="#15803d" stroke-width="2"/>
+                    <path id="leaf3" class="plant-part" d="M 100 85 C 60 70 50 35 70 30 C 85 30 95 65 100 85 Z" fill="#22c55e" stroke="#15803d" stroke-width="2"/>
+                    <path id="leaf4" class="plant-part" d="M 100 65 C 125 35 140 20 118 15 C 95 20 95 50 100 65 Z" fill="#22c55e" stroke="#15803d" stroke-width="2"/>
+
+                    <!-- Çiçek / Sağlık İşareti -->
+                    <g id="flowerVisual" class="transition-transform duration-500 scale-100">
+                        <circle cx="100" cy="58" r="9" fill="#facc15" />
+                        <circle cx="100" cy="58" r="4" fill="#ca8a04" />
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Toprak Nem Durum Çubuğu -->
+            <div class="w-full bg-slate-900/80 border border-slate-700 py-1.5 px-3 rounded-xl text-center">
+                <span id="soilStatus" class="text-xs font-bold text-sky-400">Toprak Nem Durumu: İdeal (Su Mevcut)</span>
+            </div>
+        </section>
+
+        <!-- SAĞ SÜTUN: Denklem ve Biyolojik Analiz Raporu (3 Kolon) -->
+        <section class="col-span-3 flex flex-col justify-between space-y-3">
+            
+            <!-- Kimyasal Tepkime Formülü -->
+            <div class="bg-slate-800/80 border border-slate-700 p-3.5 rounded-2xl space-y-2">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-flask text-emerald-400"></i> Fotosentez Denklemi
+                </h3>
+
+                <div class="space-y-1.5 text-xs font-mono">
+                    <div id="eqCO2" class="p-2 rounded-lg bg-slate-900 border border-slate-700 flex justify-between items-center">
+                        <span>6 CO₂ (Karbondioksit)</span>
+                        <span id="badgeCO2" class="font-sans text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">VAR</span>
+                    </div>
+                    <div id="eqH2O" class="p-2 rounded-lg bg-slate-900 border border-slate-700 flex justify-between items-center">
+                        <span>6 H₂O (Su)</span>
+                        <span id="badgeH2O" class="font-sans text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">VAR</span>
+                    </div>
+                </div>
+
+                <div class="text-center text-[10px] py-1 border-y border-dashed border-slate-700 my-1">
+                    <span id="eqLight" class="font-bold text-amber-400">IŞIK ENERJİSİ</span>
+                    <i class="fa-solid fa-arrow-down block my-0.5 text-emerald-400"></i>
+                    <span id="eqChl" class="font-bold text-emerald-400">KLOROFİL</span>
+                </div>
+
+                <div class="space-y-1.5 text-xs font-mono">
+                    <div id="eqGlucose" class="p-2 rounded-lg bg-slate-900 border border-slate-700 flex justify-between items-center">
+                        <span>C₆H₁₂O₆ (Glikoz)</span>
+                        <span id="badgeGlucose" class="font-sans text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">+ Üretildi</span>
+                    </div>
+                    <div id="eqO2" class="p-2 rounded-lg bg-slate-900 border border-slate-700 flex justify-between items-center">
+                        <span>6 O₂ (Oksijen)</span>
+                        <span id="badgeO2" class="font-sans text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">+ Salındı</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Akıllı Tahta Bilimsel Rapor Kutusu -->
+            <div class="bg-slate-800/80 border border-slate-700 p-3.5 rounded-2xl flex-grow flex flex-col">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-microscope text-emerald-400"></i> Biyolojik Değerlendirme
+                </h3>
+                <div id="explanationText" class="text-xs text-slate-300 space-y-2 leading-relaxed overflow-y-auto max-h-[180px] pr-1">
+                    <!-- Dinamik İçerik -->
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- JavaScript Mantığı -->
+    <script>
+        // Durum Değişkenleri
+        const factors = {
+            Light: true,
+            Water: true,
+            CO2: true,
+            Chlorophyll: true
+        };
+
+        // DOM Elemanları
+        const tempSlider = document.getElementById('tempSlider');
+        const tempValue = document.getElementById('tempValue');
+        const resetBtn = document.getElementById('resetBtn');
+
+        const sunContainer = document.getElementById('sunContainer');
+        const co2Visual = document.getElementById('co2Visual');
+        const o2Visual = document.getElementById('o2Visual');
+        const waterVisual = document.getElementById('waterVisual');
+        const flowerVisual = document.getElementById('flowerVisual');
+        const soilStatus = document.getElementById('soilStatus');
+
+        const plantStem = document.getElementById('plantStem');
+        const leaves = [
+            document.getElementById('leaf1'),
+            document.getElementById('leaf2'),
+            document.getElementById('leaf3'),
+            document.getElementById('leaf4')
+        ];
+
+        const topStatusBox = document.getElementById('topStatusBox');
+        const topStatusIcon = document.getElementById('topStatusIcon');
+        const topStatusText = document.getElementById('topStatusText');
+
+        const badgeCO2 = document.getElementById('badgeCO2');
+        const badgeH2O = document.getElementById('badgeH2O');
+        const badgeGlucose = document.getElementById('badgeGlucose');
+        const badgeO2 = document.getElementById('badgeO2');
+        const eqLight = document.getElementById('eqLight');
+        const eqChl = document.getElementById('eqChl');
+
+        const explanationText = document.getElementById('explanationText');
+
+        // Faktör Değiştirme Fonksiyonu
+        function toggleFactor(factor) {
+            factors[factor] = !factors[factor];
+            updateButtonState(factor);
+            updateSimulation();
+        }
+
+        function updateButtonState(factor) {
+            const btn = document.getElementById(`btn${factor}`);
+            const state = document.getElementById(`state${factor}`);
+            const isON = factors[factor];
+
+            if (isON) {
+                state.textContent = "AÇIK";
+                state.className = `text-xs font-black px-2 py-1 rounded-md text-slate-950 ${getFactorBadgeBg(factor)}`;
+                btn.classList.add(getFactorBorderColor(factor));
+         
